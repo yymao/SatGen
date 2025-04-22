@@ -1,0 +1,22 @@
+[project]
+name = "SatGen"
+version = "2023.04.16"
+dependencies = [
+    "numpy",
+    "scipy",
+    "fast-histogram",
+    "cosmolopy",
+    "lmfit",
+]
+
+[build-system]
+requires = [
+    "setuptools>=60",
+    "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+SatGen = ["*.npy", "*.npz"]
