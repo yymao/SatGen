@@ -6,17 +6,18 @@
 
 #########################################################################
 
-import config as cfg
-import cosmo as co
-import profiles as pr
+from . import config as cfg
+from . import cosmo as co
+from . import profiles as pr
 
 import numpy as np
 from scipy.interpolate import interp1d,interp2d
 from scipy.optimize import brentq
 
+import sys
 #########################################################################
 
-#---tidal tracks    
+#---tidal tracks
 
 alpha_grid_P10 = np.array([1.5,1.,0.5,0.])
 mu_vmax_grid_P10 = np.array([0.4,0.4,0.4,0.4])
@@ -34,22 +35,22 @@ eta_rmax_interp_P10 = interp1d(alpha_grid_P10,eta_rmax_grid_P10,
 def g_P10(x,alpha=1.):
     """
     Penarrubia+10 tidal tracks, i.e., the evolution of v_max(t)/v_max(0)
-    and l_max(t)/l_max(0) as functions of the bound mass fraction 
+    and l_max(t)/l_max(0) as functions of the bound mass fraction
     m(t)/m(0)
 
     Syntax:
-    
+
         g_P10(x,alpha=1.)
-    
+
     where
-    
+
         x:=m(t)/m(0), i.e., the bound mass fraction (float)
-        alpha: the initial inner slope of a subhalo, i.e., the initial 
-            "gamma" in the Zhao96 and Kravtsov+98 alpha-beta-gamma 
+        alpha: the initial inner slope of a subhalo, i.e., the initial
+            "gamma" in the Zhao96 and Kravtsov+98 alpha-beta-gamma
             profile (default=1., appropriate for NFW)
-            
+
     Return:
-    
+
         v_max(t)/v_max(0), l_max(t)/l_max(0)
     """
     if alpha < alpha_grid_P10.min():
@@ -62,7 +63,7 @@ def g_P10(x,alpha=1.):
     eta_rmax = eta_rmax_interp_P10(alpha)
     y = 2./(1.+x)
     return y**mu_vmax * x**eta_vmax, y**mu_rmax * x**eta_rmax
-    
+
 alpha_grid_EPW18 = np.array([1.5,1.,0.5,0.])
 lefflmax_grid_EPW18 = np.array([0.05,0.1])
 alpha_mesh_EPW18,lefflmax_mesh_EPW18 = np.meshgrid(alpha_grid_EPW18,
@@ -108,23 +109,23 @@ def g_EPW18(x,alpha=1.,lefflmax=0.1):
     Errani, Penerrubia, & Walker (2018) tidal tracks, i.e., the evolution
     of l_eff(t)/l_eff(0) and m_star(t)/m_star(0) as functions of the mass
     within l_max, i.e., m_max(t)/m_max(0)
-    
+
     Syntax:
-    
+
         g_EPW18(x,alpha=1.,lefflmax=0.1)
-    
+
     where
-    
-        x:=m_max(t)/m_max(0), i.e., the mass within l_max wrt the initial 
+
+        x:=m_max(t)/m_max(0), i.e., the mass within l_max wrt the initial
             value of that (float)
-        alpha: the initial inner slope of a subhalo, i.e., the initial 
-            "gamma" in the Zhao96 and Kravtsov+98 alpha-beta-gamma 
+        alpha: the initial inner slope of a subhalo, i.e., the initial
+            "gamma" in the Zhao96 and Kravtsov+98 alpha-beta-gamma
             profile (default=1., appropriate for NFW)
         lefflmax: the initial ratio between l_eff and l_max, i.e., how
             segregated the stars and DM are initially (default=0.1)
-            
+
     Return:
-    
+
         l_eff(t)/l_eff(0), m_star(t)/m_star(0)
     """
     xs_leff = 10.**lgxs_leff_interp_EPW18(alpha,lefflmax)
@@ -136,32 +137,32 @@ def g_EPW18(x,alpha=1.,lefflmax=0.1):
     y_leff = (1.+xs_leff)/(x+xs_leff)
     y_mstar = (1.+xs_mstar)/(x+xs_mstar)
     return y_leff**mu_leff *x**eta_leff, y_mstar**mu_mstar *x**eta_mstar
- 
+
 def Dekel(mv,mv0,lmax0,vmax0,alpha0,z=0.):
     """
     Use the Penarrubia+10 tidal tracks to evolve a satellite described by
     a Dekel+17 profile, assuming that the innermost slope alpha doesn't
     change.
-    
+
     Syntax:
-    
+
         Dekel(mv,mv0,lmax0,vmax0,alpha0,z=0.)
-    
+
     where
-    
+
         mv: the evolved virial mass [M_sun] (float or array)
-        mv0: the initial virial mass [M_sun] (float) 
-        lmax0: the initial l_max, i.e., the radius where the maximum 
+        mv0: the initial virial mass [M_sun] (float)
+        lmax0: the initial l_max, i.e., the radius where the maximum
             circular velocity is reached [kpc] (float)
         vmax0: the initial v_max, i.e., the maximum circular velocity
             [kpc/Gyr] (float)
         alpha0: the initial innermost logarithmic density slope (float)
         z: redshift, for computing the critical density rho_crit (float)
             (default=0.)
-        
+
     Return:
-    
-        the new Dekel concentration, c(float), 
+
+        the new Dekel concentration, c(float),
         the new spherical overdensity, Delta (float)
     """
     g_vmax,g_lmax = g_P10(mv/mv0,alpha0)
@@ -174,40 +175,40 @@ def Dekel(mv,mv0,lmax0,vmax0,alpha0,z=0.):
     c = s2**2 * lv / lmax
     rhoc = co.rhoc(z,h=cfg.h,Om=cfg.Om,OL=cfg.OL)
     Delta = 3.*mv / (cfg.FourPi * lv**3 * rhoc)
-    return c,Delta 
-    
+    return c,Delta
+
 def Dekel2(mv,mv0,lmax0,vmax0,alpha0,slope0,z=0.):
     """
     Use the Penarrubia+10 tidal tracks to evolve a satellite described by
     a Dekel+17 profile, assuming that the innermost slope alpha doesn't
     change.
-    
+
     Note that this is a variant of the "Dekel" function: use the initial
-    inner slope at l ~ 0.01 l_vir, instead of the innermost slope, as the 
+    inner slope at l ~ 0.01 l_vir, instead of the innermost slope, as the
     slope condition for the tidal tracks.
-    
+
     Syntax:
-    
+
         Dekel2(mv,mv0,lmax0,vmax0,alpha0,slope0,z=0.)
-    
+
     where
-    
+
         mv: the evolved virial mass [M_sun] (float or array)
-        mv0: the initial virial mass [M_sun] (float) 
-        lmax0: the initial l_max, i.e., the radius where the maximum 
+        mv0: the initial virial mass [M_sun] (float)
+        lmax0: the initial l_max, i.e., the radius where the maximum
             circular velocity is reached [kpc] (float)
         vmax0: the initial v_max, i.e., the maximum circular velocity
             [kpc/Gyr] (float)
         alpha0: the initial innermost logarithmic density slope (float)
-        slope0: the initial inner logarithmic density slope at 
+        slope0: the initial inner logarithmic density slope at
             l ~ 0.01 l_vir -- this is used as the slope condition for the
             tidal tracks (float)
         z: redshift, for computing the critical density rho_crit (float)
             (default=0.)
-        
+
     Return:
-    
-        the new Dekel concentration, c(float), 
+
+        the new Dekel concentration, c(float),
         the new spherical overdensity, Delta (float)
     """
     g_vmax,g_lmax = g_P10(mv/mv0,slope0)
@@ -220,7 +221,7 @@ def Dekel2(mv,mv0,lmax0,vmax0,alpha0,slope0,z=0.):
     c = s2**2 * lv / lmax
     rhoc = co.rhoc(z,h=cfg.h,Om=cfg.Om,OL=cfg.OL)
     Delta = 3.*mv / (cfg.FourPi * lv**3 * rhoc)
-    return c,Delta 
+    return c,Delta
 
 #---for tidal stripping
 
@@ -230,7 +231,7 @@ def alpha_from_c2(c2p, c2s):
     the instantaneous host- and initial subhalo concentrations.
 
     Syntax:
-    
+
         alpha_from_c2(c2p, cs2)
 
     where
@@ -250,7 +251,7 @@ def alpha_from_c2(c2p, c2s):
         given the INITIAL NFW profile.
 
     TODO:
-    
+
         Update this based on the final DASH calibration.
     """
     return 0.55 * ((c2s/c2p) / 2.)**(-1./3.)
@@ -259,42 +260,42 @@ def alpha_from_c2(c2p, c2s):
 def msub(sp,potential,xv,dt,choice='King62',alpha=1.):
     """
     Evolve subhalo mass due to tidal stripping, by an amount of
-    
+
         alpha * [m - m(l_t)] * dt/t_dyn
-        
-    where 
-    
-        m is the satellite virial mass; 
-        m(l_t) is the satellite mass within the tidal radius l_t; 
-        dt is the time step; 
-        t_dyn is the host dynamical locally at the satellite's position.
-    
-    Syntax:
-    
-        mass(sp,potential,xv,dt,choice='King62',alpha=1.)
-    
+
     where
-        
-        sp: satellite potential (an object of one of the classes defined 
+
+        m is the satellite virial mass;
+        m(l_t) is the satellite mass within the tidal radius l_t;
+        dt is the time step;
+        t_dyn is the host dynamical locally at the satellite's position.
+
+    Syntax:
+
+        mass(sp,potential,xv,dt,choice='King62',alpha=1.)
+
+    where
+
+        sp: satellite potential (an object of one of the classes defined
             in profiles.py)
         potential: host potential (a density profile object, or a list of
             such objects that constitute a composite potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
         dt: time interval [Gyr] (float)
         choice: choice of tidal radius expression, including
             "King62" (default): eq.(12.21) of Mo, van den Bosch, White 10
             "Tormen98": eq.(3) of van den Bosch+17
-        alpha: stripping efficienty parameter -- the larger the 
+        alpha: stripping efficienty parameter -- the larger the
             more effient (default=1.)
-            
+
     Return
-    
+
         evolved mass, m [M_sun] (float)
         tidal radius, l_t [kpc] (float)
     """
     lt = ltidal(sp,potential,xv,choice)
-    if lt<sp.rh: 
+    if lt<sp.rh:
         dm = alpha * (sp.Mh-sp.M(lt)) * dt/pr.tdyn(potential,xv[0],xv[2])
         dm = max(dm,0.) # avoid negative dm
         if cfg.Mres is not None:
@@ -302,33 +303,33 @@ def msub(sp,potential,xv,dt,choice='King62',alpha=1.):
             m = max(sp.Mh-dm, cfg.Mres)
         else:
             # Evolve subhaloes down to m/m_{acc} = phi_{res}
-            m = max(sp.Mh-dm,cfg.phi_res*sp.Minit) 
+            m = max(sp.Mh-dm,cfg.phi_res*sp.Minit)
     else:
         m = sp.Mh
     return m,lt
 def ltidal(sp,potential,xv,choice='King62'):
     """
     Tidal radius [kpc] of a satellite, given satellite profile, host
-    potential, and phase-space coordinate within the host. 
-    
+    potential, and phase-space coordinate within the host.
+
     Syntax:
-    
+
         ltidal(sp,potential,xv,choice='King62')
-    
+
     where
-    
+
         sp: satellite potential (an object define in profiles.py)
         potential: host potential (a density profile object, or a list of
             such objects that constitute a composite potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
         choice: choice of tidal radius expression, including
             "King62" (default): eq.(12.21) of Mo, van den Bosch, White 10
             "Tormen98": eq.(3) of van den Bosch+18
-            
-    Note that the only difference between King62 and Tormen98 is that 
-    the latter ignores the centrifugal force and thus gives larger tidal 
-    radius (i.e., weaker tidal stripping). 
+
+    Note that the only difference between King62 and Tormen98 is that
+    the latter ignores the centrifugal force and thus gives larger tidal
+    radius (i.e., weaker tidal stripping).
     """
     a = cfg.Rres
     b = 9.999*sp.rh
@@ -336,7 +337,7 @@ def ltidal(sp,potential,xv,choice='King62'):
         rhs = lt_King62_RHS(potential,xv)
     elif choice=='Tormen98':
         rhs = lt_Tormen98_RHS(potential,xv)
-    else: 
+    else:
         sys.exit('Invalid choice of tidal radius type!')
 
     fa = Findlt(a,sp,rhs)
@@ -350,19 +351,19 @@ def ltidal(sp,potential,xv,choice='King62'):
 def lt_Tormen98_RHS(potential,xv):
     """
     Auxiliary function for 'ltidal', which returns the right-hand side
-    of the Tormen98 equation for tidal radius, as in eq.(3) of 
+    of the Tormen98 equation for tidal radius, as in eq.(3) of
     van den Bosch+18, but inverted and with all subhalo terms on
     left-hand side.
-    
+
     Syntax:
-    
+
         lt_Tormen98_RHS(potential,xv)
-    
+
     where
-    
+
         potential: host potential (a density profile object, or a list of
             such objects that constitute a composite potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
     """
     r = np.sqrt(xv[0]**2.+xv[2]**2.)
@@ -373,19 +374,19 @@ def lt_Tormen98_RHS(potential,xv):
 def lt_King62_RHS(potential,xv):
     """
     Auxiliary function for 'ltidal', which returns the right-hand side
-    of the King62 equation for tidal radius, as in eq.(12.21) of 
+    of the King62 equation for tidal radius, as in eq.(12.21) of
     Mo, van den Bosch, White 10, but inverted and with all subhalo
     terms on left-hand side.
-    
+
     Syntax:
-    
+
         lt_King62_RHS(potential,xv)
-    
+
     where
-    
+
         potential: host potential (a density profile object, or a list of
             such objects that constitute a composite potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
     """
     r = np.sqrt(xv[0]**2.+xv[2]**2.)
@@ -396,20 +397,20 @@ def lt_King62_RHS(potential,xv):
     return (M / r**3) * (2.+Om**2.*r**3/cfg.G/M - dlnMdlnr)
 def Findlt(l,sp,rhs):
     """
-    Auxiliary function for 'ltidal', which returns the 
-    
+    Auxiliary function for 'ltidal', which returns the
+
         left-hand side - right-hand side
-    
+
     of the equation for tidal radius. Note that this works
     for either the Tormen98 or King62, since all differences
     are contained in the pre-computed right-hand side.
-    
+
     Syntax:
-    
+
         Findlt(l,sp,rhs)
-    
+
     where
-    
+
         l: radius in the satellite [kpc] (float)
         sp: satellite potential (an object define in profiles.py)
         rhs: right-hand side of equation, computed by either
@@ -420,62 +421,62 @@ def Findlt(l,sp,rhs):
 def Omega(xv):
     """
     Angular speed [Gyr^-1] upon input of phase-space coordinates
-    
-    Syntax: 
-    
+
+    Syntax:
+
         Omega(xv):
-    
+
     where
-    
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
     """
     rsqr = xv[0]**2.+xv[2]**2.
     rxv = np.cross( np.array([xv[0],0.,xv[2]]) , xv[3:6] )
     return np.sqrt(rxv[0]**2.+rxv[1]**2.+rxv[2]**2.) / rsqr
-    
+
 def mgas(sg,sp,gpotential,potential,xv,dt,kappa=1.,alpha=1.):
     """
     Evolve satellite gas mass due to tidal stripping, by an amount of
-    
+
         [m - m(l_rp)] * dt / t_dyn
-        
-    where m is the satellite gas mass; m(l_rp) is the satellite gas mass 
-    within ram pressure radius l_rp; dt is the timestep size; and t_dyn 
-    is the host dynamical time within radius r. 
+
+    where m is the satellite gas mass; m(l_rp) is the satellite gas mass
+    within ram pressure radius l_rp; dt is the timestep size; and t_dyn
+    is the host dynamical time within radius r.
     ( r is given by np.sqrt(xv[0]**2.+xv[2]**2.) )
-    
+
     Syntax:
-    
+
         mgas(sg,sp,gpotential,potential,xv,dt,kappa=1.,alpha=1.)
-    
+
     where
-    
-        sg: satellite gas profile (an object of one of the classes 
+
+        sg: satellite gas profile (an object of one of the classes
             defined in profiles.py)
-        sp: satellite potential (an object of one of the classes defined 
+        sp: satellite potential (an object of one of the classes defined
             in profiles.py)
-        gpotential: the gas part of the host potential (a density profile 
-            object, or a list of such objects that constitute a composite 
+        gpotential: the gas part of the host potential (a density profile
+            object, or a list of such objects that constitute a composite
             potential)
         potential: host potential (a density profile object, or a list of
             such objects that constitute a composite potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
         dt: time interval [Gyr] (float)
-        kappa: the fudge factor of order unity in front of the 
-            gravitational restoring pressure (0.5-2 depending on 
+        kappa: the fudge factor of order unity in front of the
+            gravitational restoring pressure (0.5-2 depending on
             assumptions, see Zinger+18 for details) (default=1.)
-        alpha: stripping efficienty parameter -- the larger the 
+        alpha: stripping efficienty parameter -- the larger the
             more effient (default=1.)
 
     Return:
-    
+
         evolved gas mass, m [M_sun] (float)
         ram-pressure radius, l_rp [kpc] (float)
     """
     lrp = lram(sg,sp,gpotential,xv,kappa)
-    if lrp<sg.rh: 
+    if lrp<sg.rh:
         dm = alpha *(sg.Mh-sg.M(lrp)) *dt/pr.tdyn(potential,xv[0],xv[2])
         m = max(sg.Mh-dm,cfg.Mres)
     else:
@@ -483,27 +484,27 @@ def mgas(sg,sp,gpotential,potential,xv,dt,kappa=1.,alpha=1.):
     return m,lrp
 def lram(sg,sp,gpotential,xv,kappa=1.):
     r"""
-    Ram-pressure radius [kpc] of a satellite, given satellite gas 
-    profile, satellite profile, host halo gas profile, and phase space 
-    coordinate within the host.  
-    
+    Ram-pressure radius [kpc] of a satellite, given satellite gas
+    profile, satellite profile, host halo gas profile, and phase space
+    coordinate within the host.
+
     Syntax:
-    
+
         lram(sg,sp,gpotential,xv,kappa=1.)
-    
+
     where
-    
-        sg: satellite gas profile (an object of one of the classes 
+
+        sg: satellite gas profile (an object of one of the classes
             defined in profiles.py)
-        sp: satellite potential (an object of one of the classes defined 
+        sp: satellite potential (an object of one of the classes defined
             in profiles.py)
-        gpotential: the gas part of the host potential (a density profile 
-            object, or a list of such objects that constitute a composite 
+        gpotential: the gas part of the host potential (a density profile
+            object, or a list of such objects that constitute a composite
             potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
-        kappa: the fudge factor of order unity in front of the 
-            gravitational restoring pressure (0.5-2 depending on 
+        kappa: the fudge factor of order unity in front of the
+            gravitational restoring pressure (0.5-2 depending on
             assumptions, see Zinger+18 for details) (default=1.)
     """
     a = cfg.Rres
@@ -519,31 +520,31 @@ def lram(sg,sp,gpotential,xv,kappa=1.):
 def Findlrp(l,sg,sp,gpotential,xv,kappa):
     r"""
     Auxiliary function for "lram", returns the
-     
+
         left-hand side - right-hand side
-    
+
     of the equation for ram pressure stripping radius:
-    
+
         kappa * G m(l) rho_sat_gas(l) / l = rho_host_gas(r) v(r)^2
-    
+
     Syntax:
-   
+
         Findlrp(l,sg,sp,gpotential,xv,kappa)
-   
-    where: 
-    
+
+    where:
+
         l: radius in the satellite [kpc] (float)
-        sg: satellite gas profile (an object of one of the classes 
+        sg: satellite gas profile (an object of one of the classes
             defined in profiles.py)
-        sp: satellite potential (an object of one of the classes 
+        sp: satellite potential (an object of one of the classes
             defined in profiles.py)
-        gpotential: the gas part of the host potential (a density profile 
-            object, or a list of such objects that constitute a composite 
+        gpotential: the gas part of the host potential (a density profile
+            object, or a list of such objects that constitute a composite
             potential)
-        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of 
+        xv: phase-space coordinates [R,phi,z,VR,Vphi,Vz] in units of
             [kpc,radian,kpc,kpc/Gyr,kpc/Gyr,kpc/Gyr] (float array)
-        kappa: the fudge factor in front of the gravitational restoring 
-            pressure, that is of order unity (0.5-2 depending on 
+        kappa: the fudge factor in front of the gravitational restoring
+            pressure, that is of order unity (0.5-2 depending on
             assumptions, see Zinger+18 for details) (default=1.)
     """
     V = np.sqrt(xv[3]**2. + xv[4]**2. + xv[5]**2.)

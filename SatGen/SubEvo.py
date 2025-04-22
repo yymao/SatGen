@@ -14,20 +14,20 @@
 
 ######################## set up the environment #########################
 
-import config as cfg
-import cosmo as co
-import evolve as ev
-from profiles import NFW,Green
-from orbit import orbit
-import aux
+from . import config as cfg
+from . import cosmo as co
+from . import evolve as ev
+from .profiles import NFW,Green
+from .orbit import orbit
+from . import aux
 
 import numpy as np
 import sys
-import os 
-import time 
+import os
+import time
 from multiprocessing import Pool, cpu_count
 
-# <<< for clean on-screen prints, use with caution, make sure that 
+# <<< for clean on-screen prints, use with caution, make sure that
 # the warning is not prevalent or essential for the result
 import warnings
 #warnings.simplefilter('always', UserWarning)
@@ -56,9 +56,9 @@ cfg.phi_res = 10**-5.0 # when cfg.evo_mode == 'arbres',
 ########################### evolve satellites ###########################
 
 #---get the list of data files
-files = []    
+files = []
 for filename in os.listdir(datadir):
-    if filename.startswith('tree') and filename.endswith('.npz'): 
+    if filename.startswith('tree') and filename.endswith('.npz'):
         files.append(os.path.join(datadir, filename))
 files.sort()
 
@@ -68,7 +68,7 @@ print('>>> Evolving subhaloes ...')
 #---
 time_start = time.time()
 #for file in files: # <<< serial run, only for testing
-def loop(file): 
+def loop(file):
     """
     Replaces the loop "for file in files:", for parallelization.
     """
@@ -82,8 +82,8 @@ def loop(file):
         return
         #continue
 
-    time_start_tmp = time.time()  
-    
+    time_start_tmp = time.time()
+
     #---load trees
     f = np.load(file)
     redshift = f['redshift']
@@ -127,7 +127,7 @@ def loop(file):
 
     #---evolve
     for iz in np.arange(izmax, 0, -1): # loop over time to evolve
-        iznext = iz - 1                
+        iznext = iz - 1
         z = redshift[iz]
         tcurrent = CosmicTime[iz]
         tnext = CosmicTime[iznext]
@@ -202,7 +202,7 @@ def loop(file):
                     #---time since in current host
                     t = tnext - trelease[id]
 
-                    # Order should always be one higher than parent unless 
+                    # Order should always be one higher than parent unless
                     # ejected,in which case it should be the same as parent
                     k = order[ip,iznext] + 1
 
@@ -221,7 +221,7 @@ def loop(file):
                             alpha=alpha)
 
                     else: # we do nothing about disrupted satellite, s.t.,
-                        # its properties right before disruption would be 
+                        # its properties right before disruption would be
                         # stored in the output arrays
                         pass
 
@@ -233,17 +233,17 @@ def loop(file):
                         # below the resolution limit.
                         # NOTE: No use integrating orbit any longer once the halo
                         # is disrupted, this just slows it down
-                    
+
                         tdyn = p.tdyn(r)
                         o.integrate(t,p,m_old)
-                        xv = o.xv # note that the coordinates are updated 
+                        xv = o.xv # note that the coordinates are updated
                         # internally in the orbit instance "o" when calling
-                        # the ".integrate" method, here we assign them to 
+                        # the ".integrate" method, here we assign them to
                         # a new variable "xv" only for bookkeeping
-                        
+
                     else: # i.e., the satellite has merged to its host, so
-                        # no need for orbit integration; to avoid potential 
-                        # numerical issues, we assign a dummy coordinate that 
+                        # no need for orbit integration; to avoid potential
+                        # numerical issues, we assign a dummy coordinate that
                         # is almost zero but not exactly zero
                         tdyn = p.tdyn(cfg.Rres)
                         xv = np.array([cfg.Rres,0.,0.,0.,0.,0.])
@@ -252,12 +252,12 @@ def loop(file):
                     m_old = m
 
 
-                    #---if order>1, determine if releasing this high-order 
+                    #---if order>1, determine if releasing this high-order
                     #   subhalo to its grandparent-host, and if releasing,
                     #   update the orbit instance
                     if k>1:
-                    
-                        if (r > VirialRadius[ip,iz]) & (iz <= izroot[ip]): 
+
+                        if (r > VirialRadius[ip,iz]) & (iz <= izroot[ip]):
                             # <<< Release condition:
                             # 1. Host halo is already within a grandparent-host
                             # 2. Instant orbital radius is larger than the host
@@ -288,7 +288,7 @@ def loop(file):
                                     # in terms of new host ID.
                                 orbits[id] = orbit(xv) # update orbit object
                                 k = order[ip,iz] # update instant order to the same as the parent
-                                ejected_mass[ip] += m 
+                                ejected_mass[ip] += m
                                 # add updated subhalo mass to a bucket to be removed from host
                                 # at start of next timestep
                                 ip = ParentID[ip,iz] # update parent id
@@ -312,7 +312,7 @@ def loop(file):
 
                     # NOTE: We store tidal radius in lieu of virial radius
                     # for haloes after they start getting stripped
-                    GreenRte[id,iz] = rte 
+                    GreenRte[id,iz] = rte
                     coordinates[id,iznext,:] = xv
 
                     # NOTE: the below two are quantities at current timestep
@@ -322,14 +322,14 @@ def loop(file):
                     tdyns[id,iz] = tdyn
 
                 else: # before accretion, halo is an NFW profile
-                    if(concentration[id,iz] > 0): 
+                    if(concentration[id,iz] > 0):
                         # the halo has gone above tree mass resolution
                         # different than SatEvo mass resolution by small delta
                         potentials[id] = NFW(mass[id,iz],concentration[id,iz],
                                              Delta=VirialOverdensity[iz],z=redshift[iz])
 
     #---output
-    np.savez(outfile, 
+    np.savez(outfile,
         redshift = redshift,
         CosmicTime = CosmicTime,
         mass = mass,
@@ -342,17 +342,17 @@ def loop(file):
         concentration = concentration, # this is unchanged from TreeGen output
         coordinates = coordinates,
         )
-    
+
     #---on-screen prints
     m0 = mass[:,0][1:]
-    
+
     msk = (m0 > cfg.psi_res*M0) & (m0 < M0) & order[1:,0] == 1
     fsub = m0[msk].sum() / M0
-    
+
     MAH = mass[0,:]
     iz50 = aux.FindNearestIndex(MAH,0.5*M0)
     z50 = redshift[iz50]
-    
+
     time_end_tmp = time.time()
     print('    %s: %5.2f min, z50=%5.2f,fsub=%8.5f'%\
         (outfile,(time_end_tmp-time_start_tmp)/60., z50,fsub))
@@ -367,5 +367,5 @@ if __name__ == "__main__":
     pool = Pool(Ncores) # use as many as requested
     pool.map(loop, np.random.permutation(files), chunksize=1)
 
-time_end = time.time() 
+time_end = time.time()
 print('    total time: %5.2f hours'%((time_end - time_start)/3600.))

@@ -1,9 +1,9 @@
 #########################################################################
 #
-# global variables 
-# 
+# global variables
+#
 # import config as cfg in all related modules, and use a global variable
-# x defined here in the other modules as cfg.x 
+# x defined here in the other modules as cfg.x
 
 # Arthur Fangzhou Jiang 2017 Hebrew University
 # Sheridan Beckwith Green 2020 Yale University
@@ -13,14 +13,15 @@
 
 #########################################################################
 
-import cosmo as co
+from . import cosmo as co
 
+import os
 import numpy as np
 from scipy.interpolate import interp1d, RectBivariateSpline, splrep
 
 ########################## user control #################################
 
-#---cosmology 
+#---cosmology
 h = 0.7
 Om = 0.3
 Ob = 0.0465
@@ -45,7 +46,7 @@ z0 = 0. # [DEFAULT]: Typically changed in TreeGen_Sub
 zmax = 20.
 
 # Benson17 values
-#G0 = 0.6353 
+#G0 = 0.6353
 #gamma1 = 0.1761
 #gamma2 = 0.0411
 #gamma3 = 0.
@@ -56,7 +57,7 @@ gamma1 = -0.158
 gamma2 = 0.0488
 gamma3 = 0.202
 
-#---for satellite evolution 
+#---for satellite evolution
 phi_res = 10**-5 # Resolution in m/m_{acc}
 Rres = 0.001 # [kpc] spatial resolution (Over-written in SubEvo)
 lnL_pref = 0.75 # multiplier for Coulomb logarithm (fiducial 0.75)
@@ -95,36 +96,36 @@ TwoPisqr = 2.*np.pi**2
 ThreePi = 3.*np.pi
 FourPi = 4.*np.pi
 FourPiG = 4.*np.pi*G
-FourPiGsqr = 4.*np.pi * G**2. # useful for dynamical friction 
+FourPiGsqr = 4.*np.pi * G**2. # useful for dynamical friction
 ThreePiOverSixteenG = 3.*np.pi / (16.*G) # useful for dynamical time
 
-kms2kpcGyr = 1.0227 # multiplier for converting velocity from [km/s] to 
-    #[kpc/Gyr] <<< maybe useless, as we may only work with kpc and Gyr 
+kms2kpcGyr = 1.0227 # multiplier for converting velocity from [km/s] to
+    #[kpc/Gyr] <<< maybe useless, as we may only work with kpc and Gyr
 
-eps = 0.001 # an infinitesimal for various purposes: e.g., if the 
+eps = 0.001 # an infinitesimal for various purposes: e.g., if the
     # fractional difference of a quantify between two consecutive steps
-    # is smaller than cfg.eps, jump out of a loop; and e.g., for 
+    # is smaller than cfg.eps, jump out of a loop; and e.g., for
     # computing derivatives
-    
+
 ###################### other global variables ###########################
 
 #---for merger trees
 cosmo = {
-    # -- keywords for using the CosmoloPy library -- 
-    'omega_M_0' : Om, 
-    'omega_lambda_0' : OL, 
-    'omega_b_0' : Ob, 
+    # -- keywords for using the CosmoloPy library --
+    'omega_M_0' : Om,
+    'omega_lambda_0' : OL,
+    'omega_b_0' : Ob,
     'h' : h,
     'n' : ns,
     'sigma_8' : s8,
     'N_nu' : 0,
     'omega_n_0' : 0.0,
-    'omega_k_0' : 0.0, 
+    'omega_k_0' : 0.0,
     'baryonic_effects': False,   # True or False
-    # -- user keywords -- 
+    # -- user keywords --
     #'m_WDM' : 1.5,               # [keV], invoke WDM power spectrum
-    'MassVarianceChoice': 0,     # how to compute sigma(M,z=0): 
-                                 # 0=integration, 1=interpolation 
+    'MassVarianceChoice': 0,     # how to compute sigma(M,z=0):
+                                 # 0=integration, 1=interpolation
     }
 
 print('>>> Normalizing primordial power spectrum P(k)=(k/k_0)^n_s ...')
@@ -135,7 +136,7 @@ print('>>> Tabulating sigma(M,z=0) ...')
 lgM_grid  = np.linspace(1.,17.,1000)
 sigma_grid = co.sigma(10.**lgM_grid,z=0.,**cosmo)
 sigmalgM_interp = interp1d(lgM_grid, sigma_grid, kind='linear')
-cosmo['MassVarianceChoice'] = 1 
+cosmo['MassVarianceChoice'] = 1
 print('    From now on, sigma(M,z) is computed by interpolation.')
 
 print('>>> Tabulating z(W) and z(t_lkbk)...')
@@ -158,7 +159,7 @@ while z<=zmax:
     z = ztlkbk_interp(tlkbk+dt)
     zsample.append(z)
     dtsample.append(dt)
-dtsample.append(0.) # append a zero to the end, making dtsample the same 
+dtsample.append(0.) # append a zero to the end, making dtsample the same
     # length as zsample
 zsample = np.array(zsample)
 dtsample = np.array(dtsample)
@@ -170,7 +171,7 @@ Omsample = co.Omega(zsample,Om,OL)
 Nz = len(zsample)
 print('    Number of output redshifts = %4i, up to z = %5.2f'\
     %(Nz,zsample.max()))
-    
+
 print('>>> Tabulating Parkinson+08 J(u_res) ...')
 ures_grid = np.logspace(-6.,6.,1000)
 J_grid = co.J_vec(ures_grid)
@@ -178,8 +179,8 @@ Jures_interp = interp1d(ures_grid, J_grid, kind='linear')
 
 # for Green and van den Bosch (2019) transfer function
 gvdb_fp = np.array([ 3.37821658e-01, -2.21730464e-04,  1.56793984e-01,
-                     1.33726984e+00,  4.47757739e-01,  2.71551083e-01, 
-                    -1.98632609e-01,  1.05905814e-02, -1.11879075e+00,  
+                     1.33726984e+00,  4.47757739e-01,  2.71551083e-01,
+                    -1.98632609e-01,  1.05905814e-02, -1.11879075e+00,
                      9.26587706e-02,  4.43963825e-01, -3.46205146e-02,
                     -3.37271922e-01, -9.91000445e-02,  4.14500861e-01])
 
@@ -187,9 +188,10 @@ gvdb_fp = np.array([ 3.37821658e-01, -2.21730464e-04,  1.56793984e-01,
 print('>>> Building interpolation grid for Green+19 M(<r|f_b,c)...')
 print('>>> Building interpolation grid for Green+19 sigma(r|f_b,c)...')
 print('>>> Building interpolation grid for Green+19 d2Phidr2(r|f_b,c)...')
-gvdb_mm = np.load('etc/gvdb_mm.npy')
-gvdb_sm = np.load('etc/gvdb_sm.npy')
-gvdb_pm = np.load('etc/gvdb_pm.npy')
+_etc_path = os.path.join(os.path.dirname(__file__), 'etc')
+gvdb_mm = np.load(os.path.join(_etc_path, 'gvdb_mm.npy'))
+gvdb_sm = np.load(os.path.join(_etc_path, 'gvdb_sm.npy'))
+gvdb_pm = np.load(os.path.join(_etc_path, 'gvdb_pm.npy'))
 nfb = 100
 nr = 131
 ncs = 30
@@ -233,7 +235,7 @@ print('>>> Building interpolator for Jiang+15 orbit sampler...')
 ncdf_pts = 100
 V_by_V200c_arr = np.linspace(0., 2.6, ncdf_pts)
 Vr_by_V_arr = np.linspace(0., 1., ncdf_pts)
-jiang_cdfs = np.load('etc/jiang_cdfs.npz')
+jiang_cdfs = np.load(os.path.join(_etc_path, 'jiang_cdfs.npz'))
 V_by_V200c_cdf = jiang_cdfs['V_by_V200c']
 Vr_by_V_cdf = jiang_cdfs['Vr_by_V']
 
@@ -244,7 +246,7 @@ for i in range(0,3):
     V_by_V200c_interps.append([])
     Vr_by_V_interps.append([])
     for j in range(0,3):
-        V_by_V200c_interps[i].append(splrep(V_by_V200c_cdf[i,j], 
+        V_by_V200c_interps[i].append(splrep(V_by_V200c_cdf[i,j],
                                             V_by_V200c_arr))
         Vr_by_V_interps[i].append(splrep(Vr_by_V_cdf[i,j],
                                          Vr_by_V_arr))
