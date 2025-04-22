@@ -4,7 +4,7 @@ A semi-analytical satellite galaxy and dark matter halo generator,
 introduced in Jiang et al. (2020), extended in Green et al. (2021a) and
 Green et al. (2021b).
 
-- Installation
+## Installation
 
 `git clone https://github.com/shergreen/SatGen.git` to clone the repository.
 
@@ -12,7 +12,7 @@ Note that `git checkout sheridan` was originally required in order to get the
 version of SatGen from Green et al. (2021a). Now, the `sheridan` branch contains
 the same files as the `master` branch.
 
-- Model overview
+## Model overview
 
 SatGen generates satellite-galaxy populations for host halos of desired
 mass and redshift. It combines halo merger trees, empirical relations for
@@ -21,7 +21,7 @@ dynamical friction, and ram-pressure stripping. It emulates zoom-in
 cosmological hydrosimulations in certain ways and outperforms simulations
 regarding statistical power and numerical resolution.
 
-- Modules
+## Modules
 
 profiles.py: halo-density-profile classes, currently supporting NFW
 profile, Einasto profile, Dekel+ profile, and Miyamoto-Nagai disk
@@ -44,13 +44,13 @@ TreeGen.py: an example program for generating halo merger trees
 SatEvo.py: an example program for evolving satellite galaxies after
 generating merger trees with TreeGen.py
 
-- Dependent libraries and packages
+## Dependent libraries and packages
 
 numpy, scipy, cosmolopy
 
 We recommend using python installations from Enthought or Conda.
 
-- Basic usage
+## Basic usage
 
 SatGen builds upon density-profile classes and an orbit class, as
 implemented in profiles.py and orbit.py. Apart from SatGen's main purpose
@@ -67,7 +67,7 @@ To initialize a halo, for example, we can do
 `[]: h = NFW(1e12, 10, Delta=200., z=0.)`
 
 This defines a halo object "h" following an NFW profile of a virial mass
-of <img src="https://render.githubusercontent.com/render/math?math=M_\mathrm{vir}=10^{12}\M_\odot">
+of $ M_\mathrm{vir}=10^{12} M_\odot $
 and a concentration of 10, where a halo is defined as spherical enclosure
 of 200 times the critical density of the Universe at redshift 0. (Note
 that since the profiles module internally imports the cosmo module, if it
@@ -75,16 +75,16 @@ is the first time of importing profiles, it takes a few seconds to
 initialize cosmology-related stuff.)
 
 With the halo object defined, one can easily evaluate, at radius
-<img src="https://render.githubusercontent.com/render/math?math=r">
-[kpc], the density <img src="https://render.githubusercontent.com/render/math?math=\rho(r)">
-[<img src="https://render.githubusercontent.com/render/math?math=M_\odot\mathrm{kpc}^{-3}"> ],
-the enclosed mass <img src="https://render.githubusercontent.com/render/math?math=M(r)">
-[<img src="https://render.githubusercontent.com/render/math?math=M_\odot"> ],
-the gravitational potential <img src="https://render.githubusercontent.com/render/math?math=\Phi(r)">
-[<img src="https://render.githubusercontent.com/render/math?math=(\mathrm{kpc/Gyr})^2">],
-the circular velocity <img src="https://render.githubusercontent.com/render/math?math=V_\mathrm{circ}(r)">
+$ r $
+[kpc], the density $ \rho(r) $
+[$ M_\odot\mathrm{kpc}^{-3} $ ],
+the enclosed mass $ M(r) $
+[$ M_\odot $ ],
+the gravitational potential $ \Phi(r) $
+[$ (\mathrm{kpc/Gyr})^2 $],
+the circular velocity $ V_\mathrm{circ}(r) $
 [kpc/Gyr],
-the 1D velocity dispersion <img src="https://render.githubusercontent.com/render/math?math=\sigma(r)">
+the 1D velocity dispersion $ \sigma(r) $
 [kpc/Gyr]
 (under the assumption of isotropic velocity
 distributino), etc, by accessing the corresponding attribute or
@@ -105,19 +105,19 @@ To initialize a disk potential:
 `[]: d = MN(10**10.7, 6.5, 0.25)`
 
 This defines a disc object "d" following a Miyamoto-Nagai profile of mass
-<img src="https://render.githubusercontent.com/render/math?math=M_{\rm d}=10^{10.7}\M_\odot">
+$ M_{\rm d}=10^{10.7} M_\odot $
 with a scale radius of
-<img src="https://render.githubusercontent.com/render/math?math=a=6.5"> kpc
+$ a=6.5 $ kpc
 and a scale height of
-<img src="https://render.githubusercontent.com/render/math?math=b=0.25"> kpc.
+$ b=0.25 $ kpc.
 
-Similarly, one can evaluates various quantities by accessing the
-attributes and mothods of the disk object "d". For example,
+Similarly, one can evaluate various quantities by accessing the
+attributes and methods of the disk object "d". For example,
 
 `[]: d.Phi(8.,z=0.)`
 
 returns the gravitational potential at the cylindrical coordinate
-<img src="https://render.githubusercontent.com/render/math?math=(R,z)=(8,0)">.
+$ (R,z)=(8,0) $.
 
 One can make a composite potential simply by creating a list, e.g.,
 
@@ -135,11 +135,11 @@ velocity profile, we can do:
 `[]: Vcirc(p,R,z=0.)`
 
 Let's say, we now want to integrate the orbit of a point mass
-<img src="https://render.githubusercontent.com/render/math?math=m"> in
+$ m $ in
 this composite potential "p". To do this, first, we initialize the orbit,
 by specifying the initial 6D phase-space coordinate "xv" in the
 cylindrical frame (a list or an numpy array), xv =
-<img src="https://render.githubusercontent.com/render/math?math=[R,\phi,z,V_R,V_\phi,V_z]">
+$ [R,\phi,z,V_R,V_\phi,V_z] $
 [kpc, radian, kpc, kpc/Gyr, kpc/Gyr, kpc/Gyr] --
 
 `[]: import SatGen.orbit as orb`
