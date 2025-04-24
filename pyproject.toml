@@ -10,5 +10,5 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools", "setuptools-scm", "swig"]
 build-backend = "setuptools.build_meta"
